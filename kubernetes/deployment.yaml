@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .ServiceName }}
+    commit: "{{ .Commit }}"
+  name: {{ .ServiceName }}
+  namespace: {{ .NameSpace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .ServiceName }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ .ServiceName }}
+        commit: "{{ .Commit }}"
+    spec:
+      containers:
+      - image: {{ .RegistryPrefix }}/{{ .Group }}/{{ .App }}:{{ .Release }}
+        envFrom:
+        - secretRef:
+            name: {{ .ServiceName }}
+        imagePullPolicy: Always
+        name: {{ .ServiceName}}
+        resources:
+          requests:
+            cpu: 50m
+            memory: 40Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+      imagePullSecrets:
+      - name: {{ .Secrets }}
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
